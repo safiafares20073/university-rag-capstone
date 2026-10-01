@@ -1,0 +1,7 @@
+cohere
+langchain-community
+langchain-cohere
+langchain-chroma
+langchain-text-splitters
+pypdf
+python-dotenv
