@@ -1,0 +1,23 @@
+# مفاتيح وكلمات مرور
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# بيئة Python وملفات مؤقتة
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# إعدادات المحرر
+.idea/
+.vscode/
+
+# تقييمات المستخدمين
+app_data/
+
+# نسخ احتياطية محلية
+rag_prev.py
