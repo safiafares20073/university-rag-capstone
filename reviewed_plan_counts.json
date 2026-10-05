@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "plans": [
+    {
+      "relative_path": "كلية الهندسة/قسم الهندسة الطبية/الخطة الدراسية للهندسة الطبية الحيوية - كلية الهندسة.pdf",
+      "source_file": "الخطة الدراسية للهندسة الطبية الحيوية - كلية الهندسة.pdf",
+      "sha256": "53cecd962142c5a94636e5a451b9bb3eb09e1b90fe1be8e3cc9a295250e59b15",
+      "required_courses": 52,
+      "elective_courses_to_take": 2,
+      "thesis_items": 0,
+      "source_pages": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "count_basis": "Reviewed requirement summary or semester rows; elective alternatives are excluded."
+    },
+    {
+      "relative_path": "كلية الهندسة/قسم الهندسة المدنية/الخطة الدراسية لبرنامج الهندسة المدنية - كلية الهندسة.pdf",
+      "source_file": "الخطة الدراسية لبرنامج الهندسة المدنية - كلية الهندسة.pdf",
+      "sha256": "c1316264893bf322008f066d86c955bec0bb0e05f1cbb4d12604a176123893f7",
+      "required_courses": 49,
+      "elective_courses_to_take": 2,
+      "thesis_items": 0,
+      "source_pages": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "count_basis": "Reviewed requirement summary or semester rows; elective alternatives are excluded."
+    },
+    {
+      "relative_path": "كلية الهندسة/قسم الهندسة المعمارية/الخطة الدراسية للهندسة المعمارية - كلية الهندسة.pdf",
+      "source_file": "الخطة الدراسية للهندسة المعمارية - كلية الهندسة.pdf",
+      "sha256": "3aac6f915e9201cf8eb9588056fc111090f9c2e2186dfb67bffcda9baf49dd82",
+      "required_courses": 56,
+      "elective_courses_to_take": 3,
+      "thesis_items": 0,
+      "source_pages": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "count_basis": "Reviewed requirement summary or semester rows; elective alternatives are excluded."
+    },
+    {
+      "relative_path": "كلية الطب والعلوم الصحية/الخطة الدراسية لبكالوريوس طب وجراحة الفم والأسنان - كلية طب الاسنان.pdf",
+      "source_file": "الخطة الدراسية لبكالوريوس طب وجراحة الفم والأسنان - كلية طب الاسنان.pdf",
+      "sha256": "63e5049d8399a200adee1dd92730bbfcf2d50e063b85692cf366d2ea77f0bc39",
+      "required_courses": 89,
+      "elective_courses_to_take": 3,
+      "thesis_items": 0,
+      "source_pages": [
+        1
+      ],
+      "count_basis": "Reviewed requirement summary or semester rows; elective alternatives are excluded."
+    },
+    {
+      "relative_path": "كلية الادارة/الخطة الدراسية لبرنامج ماجستير إدارة أعمال (عربي) - الدراسات العليا والبحث العلمي.pdf",
+      "source_file": "الخطة الدراسية لبرنامج ماجستير إدارة أعمال (عربي) - الدراسات العليا والبحث العلمي.pdf",
+      "sha256": "f418199b621e109bb9bdf3c507b98696841700730d13a51f5261b595041c4e1f",
+      "required_courses": 8,
+      "elective_courses_to_take": 2,
+      "thesis_items": 1,
+      "source_pages": [
+        1
+      ],
+      "count_basis": "Reviewed requirement summary or semester rows; elective alternatives are excluded."
+    },
+    {
+      "relative_path": "كلية الحاسبات/قسم علوم الحاسوب/Study Plan for Master's Program in Computing - الدراسات العليا والبحث العلمي.pdf",
+      "source_file": "Study Plan for Master's Program in Computing - الدراسات العليا والبحث العلمي.pdf",
+      "sha256": "bab3e280d30eb6c963da0e97fbd0c07fb53a857c25ef457cc3fcafcbd7c09b8d",
+      "required_courses": 7,
+      "elective_courses_to_take": 3,
+      "thesis_items": 1,
+      "source_pages": [
+        1,
+        2
+      ],
+      "count_basis": "Reviewed requirement summary or semester rows; elective alternatives are excluded."
+    },
+    {
+      "relative_path": "كلية العلوم الانسانية/القانون/الخطة الدراسية لبرنامج ماجستير دراسات إسلامية - الدراسات العليا والبحث العلمي.pdf",
+      "source_file": "الخطة الدراسية لبرنامج ماجستير دراسات إسلامية - الدراسات العليا والبحث العلمي.pdf",
+      "sha256": "1cf658fb104132a3d922cd0670c2a38416994444be849f53636cac29b973431b",
+      "required_courses": 8,
+      "elective_courses_to_take": 2,
+      "thesis_items": 1,
+      "source_pages": [
+        1
+      ],
+      "count_basis": "Reviewed requirement summary or semester rows; elective alternatives are excluded."
+    },
+    {
+      "relative_path": "كلية الهندسة/قسم الهندسة الإلكترونية/الخطة الدراسية لبرنامج الماجستير الهندسة الإلكترونية -الاتصالات - الدراسات العليا والبحث العلمي.pdf",
+      "source_file": "الخطة الدراسية لبرنامج الماجستير الهندسة الإلكترونية -الاتصالات - الدراسات العليا والبحث العلمي.pdf",
+      "sha256": "3a1625fe0a9bb947abf577522df58bdc08eb9b14fa9eba58a8aefee58c59c2ea",
+      "required_courses": 7,
+      "elective_courses_to_take": 3,
+      "thesis_items": 1,
+      "source_pages": [
+        1,
+        2
+      ],
+      "count_basis": "Reviewed requirement summary or semester rows; elective alternatives are excluded."
+    },
+    {
+      "relative_path": "كلية الهندسة/قسم الهندسة الإلكترونية/الخطة الدراسية لبرنامج الماجستير في الهندسة الإلكترونية (الحاسوب) - الدراسات العليا والبحث العلمي.pdf",
+      "source_file": "الخطة الدراسية لبرنامج الماجستير في الهندسة الإلكترونية (الحاسوب) - الدراسات العليا والبحث العلمي.pdf",
+      "sha256": "09bd22576747a575a1e1fb8d78f06c1a43a164c9453dca6948d444e7e23b180c",
+      "required_courses": 7,
+      "elective_courses_to_take": 3,
+      "thesis_items": 1,
+      "source_pages": [
+        1,
+        2
+      ],
+      "count_basis": "Reviewed requirement summary or semester rows; elective alternatives are excluded."
+    },
+    {
+      "relative_path": "كلية الهندسة/قسم الهندسة المدنية/الخطة الدراسية لبرنامج الماجستير في الهندسة الإنشائية - الدراسات العليا والبحث العلمي.pdf",
+      "source_file": "الخطة الدراسية لبرنامج الماجستير في الهندسة الإنشائية - الدراسات العليا والبحث العلمي.pdf",
+      "sha256": "eac69195af99b2754e030be6a96d6645e4fcaf6a665989c059bdae6c1c86a997",
+      "required_courses": 6,
+      "elective_courses_to_take": 4,
+      "thesis_items": 1,
+      "source_pages": [
+        1
+      ],
+      "count_basis": "Reviewed requirement summary or semester rows; elective alternatives are excluded."
+    },
+    {
+      "relative_path": "كلية الهندسة/قسم الهندسة المعمارية/الخطة الدراسية لبرنامج الماجستير في الهندسة المعمارية - الدراسات العليا والبحث العلمي.pdf",
+      "source_file": "الخطة الدراسية لبرنامج الماجستير في الهندسة المعمارية - الدراسات العليا والبحث العلمي.pdf",
+      "sha256": "b700b23c77be07907dd99dc992706e8ab4fb26ff1bd8e10c3d2d181d4d62acd3",
+      "required_courses": 8,
+      "elective_courses_to_take": 2,
+      "thesis_items": 1,
+      "source_pages": [
+        1
+      ],
+      "count_basis": "Reviewed requirement summary or semester rows; elective alternatives are excluded."
+    }
+  ]
+}
