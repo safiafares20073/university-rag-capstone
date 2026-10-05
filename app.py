@@ -134,7 +134,7 @@ if not password:
 if not st.session_state.get("authenticated", False):
     hero()
     with st.form("login"):
-        entered = st.text_input("كلمة الدخول", type="password", placeholder="أدخل 1234")
+        entered = st.text_input("كلمة الدخول", type="password", placeholder="ادخل 1234")
         submitted = st.form_submit_button("دخول إلى المساعد", use_container_width=True)
     if submitted:
         if hmac.compare_digest(entered.encode("utf-8"), password.encode("utf-8")):
