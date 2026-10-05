@@ -14,7 +14,8 @@ PROJECT_DIR = Path(__file__).resolve().parent
 ROBOT_PATH = PROJECT_DIR / "assets" / "robot.png"
 load_dotenv(PROJECT_DIR / ".env")
 
-st.set_page_config(page_title="المساعد الجامعي", page_icon="🎓", layout="centered")
+st.set_page_config(page_title="المساعد الجامعي", page_icon="🎓", layout="centered",
+                   initial_sidebar_state="auto")
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
@@ -23,8 +24,25 @@ st.markdown("""
 .stApp h1, .stApp h2, .stApp h3 {font-family:'Amiri', serif;}
 .stMainBlockContainer {max-width:820px; padding-top:4.5rem;}
 [data-testid="stHeader"] {background:transparent;}
-[data-testid="stToolbar"], [data-testid="stAppDeployButton"],
+[data-testid="stAppDeployButton"],
 .stDeployButton, [data-testid="stDecoration"] {display:none;}
+#MainMenu {display:none;}
+/* نخفي Deploy فقط؛ يبقى شريط التحكم متاحًا لفتح القائمة. */
+[data-testid="stToolbar"] {visibility:visible !important;}
+[data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"] {
+    display:flex !important; visibility:visible !important; opacity:1 !important;
+    position:fixed !important; top:.65rem !important; left:.75rem !important;
+    z-index:10000 !important;}
+[data-testid="stSidebarCollapsedControl"] button,
+[data-testid="collapsedControl"] button {
+    display:flex !important; align-items:center; gap:.4rem;
+    visibility:visible !important; opacity:1 !important;
+    min-width:100px; min-height:44px; padding:.35rem .75rem;
+    border:1px solid #4168b0; border-radius:12px;
+    background:#112347 !important; color:#edf4ff !important;}
+[data-testid="stSidebarCollapsedControl"] button::after,
+[data-testid="collapsedControl"] button::after {
+    content:"القائمة"; font-family:'Amiri',serif; font-size:1.1rem;}
 [data-testid="stSidebar"] {background:#0b1528; direction:rtl;}
 [data-testid="stSidebar"] p, [data-testid="stSidebar"] label {text-align:right;}
 .brand {direction:rtl; text-align:center; margin:0 0 1rem;}
@@ -116,7 +134,7 @@ if not password:
 if not st.session_state.get("authenticated", False):
     hero()
     with st.form("login"):
-        entered = st.text_input("كلمة الدخول", type="password")
+        entered = st.text_input("كلمة الدخول", type="password", placeholder="أدخل 1234")
         submitted = st.form_submit_button("دخول إلى المساعد", use_container_width=True)
     if submitted:
         if hmac.compare_digest(entered.encode("utf-8"), password.encode("utf-8")):
