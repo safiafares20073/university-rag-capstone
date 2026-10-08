@@ -124,6 +124,20 @@ class StudyPlanService:
             # Every meaningful query word must match the program title.
             if q.issubset(p['words']):
                 candidates.append(p)
+        if not candidates:
+            # A question contains course names and semester words in addition
+            # to the program. Match the complete program name within it.
+            generic = {'هندسه', 'طب', 'علوم', 'اداره', 'تقنيه', 'لغه', 'حوسبه'}
+            for p in self.plans.values():
+                if p['masters'] != masters:
+                    continue
+                anchors = query_words(p['label']) - {'ماجستير', 'ماجستيير', 'master', 'it', 'bit'}
+                if anchors and anchors <= q and anchors - generic:
+                    candidates.append(p)
+            if candidates:
+                specificity = max(len(query_words(p['label'])) for p in candidates)
+                candidates = [p for p in candidates
+                              if len(query_words(p['label'])) == specificity]
         if lang is not None and candidates and all({'تقنيه','معلومات'}.issubset(p['words']) for p in candidates):
             candidates = [p for p in candidates if p['english'] == lang]
         if len(candidates) == 1:
@@ -171,6 +185,10 @@ class StudyPlanService:
         candidate_question = parts[-1].strip() if len(parts) > 1 else question
         candidate_question = re.sub(r"^(?:تخصص|برنامج)\s+", "", candidate_question)
         plan, clarification = self.select(candidate_question)
+        if plan is None and len(parts) > 1:
+            # "مقدمة في الكيمياء الحيوية" contains في inside a course name;
+            # a complete-question fallback still finds the program title.
+            plan, clarification = self.select(question)
         if plan is None:
             return [], clarification
         pages = self.read_pages(plan)
@@ -182,7 +200,57 @@ class StudyPlanService:
                    for i, text in enumerate(pages, 1) if text.strip()]
         if not records:
             return [], 'وجدت الخطة، لكن لم أستطع استخراج نصها للإجابة.'
+        requested = self.requested_semesters(question)
+        if requested:
+            inspected = self.inspect(plan)
+            selected = []
+            for semester in requested:
+                rows = inspected['tables'].get(semester, [])
+                if not rows:
+                    return [], f'لم أتمكن من قراءة جدول الفصل {semester} من هذه الخطة؛ للتأكد من مقرراته تواصل مع القسم.'
+                grouped = {}
+                for row in rows:
+                    page = row['page_number']
+                    lines = pages[page - 1].splitlines()
+                    start = next((i for i, line in enumerate(lines)
+                                  if line.strip() == row['row']), None)
+                    if start is None:
+                        return [], 'تعذر استخراج جدول الفصل المطلوب بشكل موثوق؛ للتأكد من مقرراته تواصل مع القسم.'
+                    excerpt = [lines[start]]
+                    for line in lines[start + 1:]:
+                        if (re.match(r'^\s*\d{1,2}\s*\.?\s*(?:[A-Z]|\d{6})', line)
+                            or re.search(r'total|semester|year|المجموع|الفصل', line, re.I)):
+                            break
+                        excerpt.append(line)
+                    grouped.setdefault(page, []).append('\n'.join(excerpt).strip())
+                for page, fragments in grouped.items():
+                    selected.append(dict(
+                        id=f"plan-semester:{plan['relative_path']}:{semester}:{page}",
+                        text=f'صفوف جدول الفصل {semester} من الخطة:\n' + '\n'.join(fragments),
+                        metadata=dict(source_file=plan['source_file'],
+                                      relative_path=plan['relative_path'], page_number=page)))
+            return selected, ''
         return records, ''
+
+    @staticmethod
+    def requested_semesters(question):
+        q = normal(question)
+        ordinals = {'اول': 1, 'اولي': 1, 'ثاني': 2, 'ثانيه': 2,
+                    'ثالث': 3, 'ثالثه': 3, 'رابع': 4, 'رابعه': 4,
+                    'خامس': 5, 'خامسه': 5, 'سادس': 6, 'سادسه': 6,
+                    'سابع': 7, 'سابعه': 7, 'ثامن': 8, 'ثامنه': 8,
+                    'تاسع': 9, 'تاسعه': 9, 'عاشر': 10, 'عاشره': 10}
+        alternatives = '|'.join(sorted(ordinals, key=len, reverse=True))
+        def values(noun):
+            matches = re.findall(r'\b(?:ال)?' + noun + r'\s+(?:ال)?(' + alternatives + r'|\d{1,2})\b', q)
+            return [int(v) if v.isdigit() else ordinals[v] for v in matches]
+        years = values('سنه') or values('عام')
+        semesters = values('فصل')
+        if years and not semesters:
+            return [2 * years[0] - 1, 2 * years[0]]
+        if years and semesters and all(v <= 2 for v in semesters):
+            return [2 * (years[0] - 1) + v for v in semesters]
+        return list(dict.fromkeys(semesters))
 
     def inspect(self, plan):
         pages = self.read_pages(plan)
