@@ -21,3 +21,6 @@ app_data/
 
 # نسخ احتياطية محلية
 rag_prev.py
+.idea/
+rag_prev.py
+.venv_ragas/
