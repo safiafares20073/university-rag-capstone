@@ -145,9 +145,9 @@ class StudyPlanService:
         if len(candidates) > 1:
             labels = list(dict.fromkeys(p['label'] for p in candidates))
             if all('تقنية المعلومات' in p['label'] for p in candidates):
-                return None, 'تقصدين تقنية المعلومات بالعربي أم بالإنجليزي؟'
-            return None, 'أي برنامج تقصدين: ' + '، أم '.join(labels) + '؟'
-        return None, ('لم أستطع مطابقة اسم البرنامج بدقة. اكتبي اسمه الرسمي '
+                return None, 'تقصد تقنية المعلومات بالعربي أم بالإنجليزي؟'
+            return None, 'أي برنامج تقصد: ' + '، أم '.join(labels) + '؟'
+        return None, ('لم أستطع مطابقة اسم البرنامج بدقة. اكتب اسمه الرسمي '
                       'ولغة الدراسة إن كان له أكثر من خيار؛ لا تحتاجين اسم الملف.')
 
     def answer_programs(self, question):
@@ -452,3 +452,4 @@ if __name__ == '__main__':
     print(f'تم فحص {len(results)} خطة. التقرير: {target}')
     for result in results:
         print(result['status'], result['total'], result['relative_path'])
+

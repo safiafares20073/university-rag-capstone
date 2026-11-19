@@ -3,7 +3,8 @@ import re
 import unicodedata
 from pathlib import Path
 from pypdf import PdfReader
-import cohere
+from llm_backend import client, CHAT_MODEL
+from conversation_logic import split_requests, merge_results
 from dotenv import load_dotenv
 from retrieval import UniversityRetriever
 from study_plans import StudyPlanService, count_question, normal, tokens, query_words
@@ -49,20 +50,18 @@ REWRITE_PROMPT = '''حوّل رسالة الطالب الأخيرة إلى سؤ�
 لا تضف اسم وثيقة، ولا تجب عن السؤال. أخرج السؤال وحده.'''
 
 
-def extract_text(response):
-    return '\n'.join(block.text for block in (response.message.content or [])
-                     if getattr(block, 'type', None) == 'text' and getattr(block, 'text', None)).strip()
 
 
 class UniversityRAG:
     def __init__(self):
-        key = os.getenv('COHERE_API_KEY')
+        key = os.getenv('OPENAI_API_KEY')
         if not key:
-            raise ValueError('أضيفي COHERE_API_KEY إلى ملف .env')
-        self.model = os.getenv('COHERE_CHAT_MODEL') or 'command-a-03-2025'
+            raise ValueError('أضف OPENAI_API_KEY إلى ملف .env')
+        self.model = CHAT_MODEL
+        self.language = 'ar'
         self.retriever = UniversityRetriever()
         self.plans = StudyPlanService(self.retriever, PROJECT_DIR / 'docs')
-        self.client = cohere.ClientV2(api_key=key)
+        self.client = client()
         self.history = []
         self.last_search_question = None
 
@@ -75,8 +74,9 @@ class UniversityRAG:
         self.history = self.history[-12:]
 
     def chat_text(self, messages, max_tokens=1000):
-        text = extract_text(self.client.chat(model=self.model, temperature=0,
-                                             max_tokens=max_tokens, messages=messages))
+        response = self.client.chat.completions.create(model=self.model, temperature=0,
+            max_completion_tokens=max_tokens, messages=messages)
+        text = (response.choices[0].message.content or '').strip()
         if not text:
             raise RuntimeError('لم يرجع النموذج إجابة نصية.')
         return text
@@ -261,10 +261,46 @@ class UniversityRAG:
                     search_question=question)
 
     def answer(self, question):
+        result = self._answer_dispatch(question)
+        if self.language == 'en' and re.search(r'[\u0600-\u06ff]', result['answer']):
+            translated = self.chat_text([
+                {'role':'system','content':'Translate the answer into English faithfully. Preserve all numbers, qualifications, URLs and citation markers exactly. Do not add facts.'},
+                {'role':'user','content':result['answer']}])
+            # Enforce the selected UI language even for deterministic plan refusals.
+            if re.search(r'[\u0600-\u06ff]', translated):
+                translated = 'I could not verify this information. Please contact the relevant university department for confirmation.'
+                result = dict(result, sources=[])
+            result = dict(result, answer=translated)
+            if self.history and self.history[-1]['role'] == 'assistant':
+                self.history[-1]['content'] = translated
+        return result
+
+    def _answer_dispatch(self, question):
+        parts = split_requests(question)
+        if len(parts) == 1:
+            return self._answer_one(question)
+        old_history = list(self.history)
+        old_question = self.last_search_question
+        try:
+            results = [self._answer_one(part) for part in parts]
+        except Exception:
+            self.history = old_history
+            self.last_search_question = old_question
+            raise
+        self.history = old_history
+        result = merge_results(parts, results)
+        self.remember(question, result['answer'])
+        return result
+
+    def _answer_one(self, question):
         question = question.strip()
         if not question:
-            raise ValueError('اكتبي سؤالًا أولًا.')
+            raise ValueError('اكتب سؤالًا أولًا.')
         search_question = self.make_search_question(question)
+        if re.search(r'[A-Za-z]{3,}', search_question) and not re.search(r'[\u0600-\u06ff]', search_question):
+            search_question = self.chat_text([
+                {'role':'system','content':'Translate this standalone university search question into Arabic. Preserve program names, semester numbers and language variants. Return only the translated question, not an answer.'},
+                {'role':'user','content':search_question}], max_tokens=250)
         self.last_search_question = search_question
         guide_records = self.electronic_guide_records(search_question)
         if guide_records is not None:
@@ -291,7 +327,7 @@ class UniversityRAG:
             is_plan_question = False
         # Vague "requirements to study" may mean admission or the curriculum.
         if re.search(r"متطلبات?\s+(?:دراسة|دراسه)\s+(?:تخصص\s+)?تقنية\s+المعلومات\s+(?:في الجامعة|بالجامعة)", search_question):
-            answer = 'تقصدين شروط القبول والتسجيل، أم مقررات الخطة ومتطلبات التخرج؟'
+            answer = 'تقصد شروط القبول والتسجيل، أم مقررات الخطة ومتطلبات التخرج؟'
             self.remember(question, answer)
             return dict(answer=answer, sources=[], retrieved_chunks=[], search_question=search_question)
         if guide_records is not None:
@@ -316,7 +352,7 @@ class UniversityRAG:
                 records.append(record)
                 seen_ids.add(record['id'])
         if not records:
-            answer = 'للاستفسار عن هذه المعلومة، يُنصح بالرجوع إلى [موقع الجامعة](https://ust.edu.ye/) أو التواصل مع الجهة المختصة في الجامعة.'
+            answer = ('For this information, please visit the [university website](https://ust.edu.ye/) or contact the relevant university department.' if self.language == 'en' else 'للاستفسار عن هذه المعلومة، يُنصح بالرجوع إلى [موقع الجامعة](https://ust.edu.ye/) أو التواصل مع الجهة المختصة في الجامعة.')
             self.remember(question, answer)
             return dict(answer=answer, sources=[], retrieved_chunks=[], search_question=search_question)
         blocks, sources = [], []
@@ -337,8 +373,8 @@ class UniversityRAG:
         rate_instruction = ('\nسيضيف البرنامج معدل القبول الموثق قبل إجابتك. '
                             'لا تكرر معدل القبول؛ أجب عن بقية السؤال فقط.' if rate_prefix else '')
         answer = self.chat_text([
-            {'role':'system', 'content':SYSTEM_PROMPT}, *self.history,
-            {'role':'user', 'content':f'رسالة الطالب: {question}\nالسؤال المستقل: {search_question}\nالأدلة الحالية:\n{evidence}{rate_instruction}'}])
+            {'role':'system', 'content':SYSTEM_PROMPT + ('\nRespond only in English, including clarification questions, refusals, uncertainty messages and university contact advice. Do not copy Arabic fallback phrases from these instructions.' if self.language == 'en' else '\nخاطب المستخدم بصيغة المذكر: اكتب، اسأل، اختر.')}, *self.history,
+            {'role':'user', 'content':f'رسالة الطالب: {question}\nالسؤال المستقل: {search_question}\nأجب عن كل جزء من رسالة الطالب ولا تكتفِ بالجزء الأخير.\nالأدلة الحالية:\n{evidence}{rate_instruction}'}])
         answer = rate_prefix + answer
         admission_question = bool(set(tokens(search_question)) & {'قبول', 'تسجيل', 'التحاق', 'اسجل'})
         if not admission_question:
@@ -353,7 +389,7 @@ class UniversityRAG:
 def main():
     rag = UniversityRAG()
     print(f'المساعد جاهز. تم التعرف على {len(rag.plans.plans)} خطة دراسية.')
-    print('اكتبي خروج لإنهاء البرنامج، أو محادثة جديدة لمسح السياق.')
+    print('اكتب خروج لإنهاء البرنامج، أو محادثة جديدة لمسح السياق.')
     while True:
         question = input('\nسؤالك: ').strip()
         if question.lower() in {'خروج','exit','quit'}:
@@ -373,7 +409,7 @@ def main():
             print('=' * 60)
         except Exception as error:
             if getattr(error, 'status_code', None) == 429:
-                print('انتظري دقيقة ثم أعيدي الرسالة.')
+                print('انتظر دقيقة ثم أعد الرسالة.')
             elif isinstance(error, (ValueError, FileNotFoundError)):
                 print(f'تعذر إكمال الطلب: {error}')
             else:
@@ -382,4 +418,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 

@@ -7,7 +7,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from pypdf import PdfReader
 from langchain_core.documents import Document
-from langchain_cohere import CohereEmbeddings
+from llm_backend import OpenAIEmbeddings, DB_DIR, COLLECTION_NAME, EMBEDDING_MODEL
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -22,10 +22,10 @@ PROJECT_DIR = Path(__file__).resolve().parent
 DATA_DIR = PROJECT_DIR / "docs"
 
 # قاعدة البيانات تُحفظ داخل مجلد المشروع
-DB_DIR = PROJECT_DIR / "chroma_db_cohere"
 
-COLLECTION_NAME = "university_sources_v1"
-EMBEDDING_MODEL = "embed-v4.0"
+
+
+
 
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 150
@@ -33,7 +33,7 @@ BATCH_SIZE = 16
 
 load_dotenv(PROJECT_DIR / ".env")
 
-API_KEY = os.getenv("COHERE_API_KEY")
+API_KEY = os.getenv("OPENAI_API_KEY")
 
 # التعرف على علامات الصفحات في ملفَي الرسوم واللائحة
 PAGE_MARKER = re.compile(
@@ -169,7 +169,7 @@ def load_text(file_path):
 def main():
     if not API_KEY:
         raise RuntimeError(
-            "لم أجد COHERE_API_KEY في ملف .env بجانب ingest.py"
+            "لم أجد OPENAI_API_KEY في ملف .env بجانب ingest.py"
         )
 
     if not DATA_DIR.is_dir():
@@ -259,9 +259,9 @@ def main():
 
     print(f"عدد المقاطع: {len(chunks)}")
 
-    embeddings = CohereEmbeddings(
+    embeddings = OpenAIEmbeddings(
         model=EMBEDDING_MODEL,
-        cohere_api_key=API_KEY,
+        api_key=API_KEY,
     )
 
     vectorstore = Chroma(
@@ -270,6 +270,11 @@ def main():
         persist_directory=str(DB_DIR),
     )
 
+    metadata = vectorstore._collection.metadata or {}
+    if metadata.get('embedding_model') not in (None, EMBEDDING_MODEL):
+        raise RuntimeError('تغير نموذج التضمين؛ استخدم مجلد VECTOR_DB_DIR جديدًا.')
+    vectorstore._collection.modify(metadata={**metadata, 'provider': 'openai',
+        'embedding_model': EMBEDDING_MODEL, 'index_ready': False})
     existing_ids = set(vectorstore.get(include=[])["ids"])
     current_ids = set(chunk_ids)
 
@@ -293,7 +298,7 @@ def main():
         print(f"تم تخزين {completed}/{len(pending)} مقطع جديد.")
 
         if completed < len(pending):
-            time.sleep(15)
+            time.sleep(float(os.getenv("INGEST_DELAY_SECONDS", "1")))
 
     # إزالة المقاطع القديمة بعد نجاح تخزين النسخة الحالية
     stale_ids = list(existing_ids - current_ids)
@@ -303,6 +308,8 @@ def main():
 
     stored_count = len(vectorstore.get(include=[])["ids"])
 
+    vectorstore._collection.modify(metadata={
+        **(vectorstore._collection.metadata or {}), 'index_ready': True})
     print("\nنجحت الفهرسة!")
     print(f"عدد المقاطع المحفوظة: {stored_count}")
     print(f"مكان قاعدة البيانات: {DB_DIR}")

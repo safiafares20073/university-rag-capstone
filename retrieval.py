@@ -4,11 +4,12 @@ import unicodedata
 from pathlib import Path
 from collections import defaultdict
 
-import cohere
+
 import chromadb
 from dotenv import load_dotenv
 from rank_bm25 import BM25Okapi
-from langchain_cohere import CohereEmbeddings
+from llm_backend import (OpenAIEmbeddings, client, rerank, DB_DIR,
+                         COLLECTION_NAME, EMBEDDING_MODEL, RERANK_MODEL)
 from pypdf import PdfReader
 
 
@@ -18,11 +19,11 @@ from pypdf import PdfReader
 
 PROJECT_DIR = Path(__file__).resolve().parent
 DATA_DIR = PROJECT_DIR / "docs"
-DB_DIR = PROJECT_DIR / "chroma_db_cohere"
 
-COLLECTION_NAME = "university_sources_v1"
-EMBEDDING_MODEL = "embed-v4.0"
-RERANK_MODEL = "rerank-v3.5"
+
+
+
+
 
 SEARCH_K = 20
 RERANK_K = 30
@@ -68,11 +69,11 @@ def normalize_relative_path(path):
 
 class UniversityRetriever:
     def __init__(self):
-        api_key = os.getenv("COHERE_API_KEY")
+        api_key = os.getenv("OPENAI_API_KEY")
 
         if not api_key:
             raise RuntimeError(
-                "لم أجد COHERE_API_KEY في ملف .env"
+                "لم أجد OPENAI_API_KEY في ملف .env"
             )
 
         if not (DB_DIR / "chroma.sqlite3").is_file():
@@ -90,6 +91,11 @@ class UniversityRetriever:
             embedding_function=None,
         )
 
+        metadata = self.collection.metadata or {}
+        if metadata.get('provider') != 'openai' or metadata.get('embedding_model') != EMBEDDING_MODEL:
+            raise RuntimeError('الفهرس لا يطابق نموذج OpenAI الحالي؛ شغّل ingest.py.')
+        if not metadata.get('index_ready'):
+            raise RuntimeError('الفهرسة غير مكتملة؛ أكمل تشغيل ingest.py أولًا.')
         stored = self.collection.get(
             include=["documents", "metadatas"]
         )
@@ -129,14 +135,9 @@ class UniversityRetriever:
 
         self.bm25 = BM25Okapi(corpus)
 
-        self.embeddings = CohereEmbeddings(
-            model=EMBEDDING_MODEL,
-            cohere_api_key=api_key,
-        )
+        self.embeddings = OpenAIEmbeddings(model=EMBEDDING_MODEL, api_key=api_key)
 
-        self.cohere_client = cohere.ClientV2(
-            api_key=api_key
-        )
+        self.openai_client = client()
 
         print(f"تم تحميل {len(self.ids)} مقطعًا للبحث.")
 
@@ -394,25 +395,8 @@ class UniversityRetriever:
         if not candidates:
             return []
 
-        response = self.cohere_client.rerank(
-            model=RERANK_MODEL,
-            query=question,
-            documents=[
-                item["text"]
-                for item in candidates
-            ],
-            top_n=min(top_k, len(candidates)),
-        )
+        return rerank(self.openai_client, question, candidates, min(top_k, len(candidates)))
 
-        return [
-            {
-                **candidates[result.index],
-                "rerank_score": float(
-                    result.relevance_score
-                ),
-            }
-            for result in response.results
-        ]
 
 
 # =========================
@@ -460,7 +444,7 @@ def main():
     retriever = UniversityRetriever()
 
     print("\nالبحث الهجين وإعادة الترتيب جاهزان.")
-    print("اكتبي سؤالًا، أو اكتبي خروج لإنهاء البرنامج.")
+    print("اكتب سؤالًا، أو اكتب خروج لإنهاء البرنامج.")
 
     while True:
         question = input("\nسؤالك: ").strip()
